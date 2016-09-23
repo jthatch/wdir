@@ -36,6 +36,8 @@ class Wdir
     private static $commandLine = false;
     private static $startTime;
     private static $logBuffer = [];
+    private static $scriptName = 'wdir.php'; // replaced in __construct with script name
+    private static $scriptPath = ''; // stores the web path, set in __construct  
 
     private static $db = false; // only set if we have $opts['db']
 
@@ -77,6 +79,9 @@ class Wdir
 
         self::$offline = $offline;
 
+        self::$scriptName = basename(__FILE__) == 'index.php' ? '' : basename(__FILE__);
+        self::$scriptPath = str_replace(basename(__FILE__), '', filter_input(INPUT_SERVER, 'PHP_SELF'));
+
         // are we running via command line or web?
         self::$commandLine = (php_sapi_name() == 'cli' || empty($_SERVER['REMOTE_ADDR']));
         if (self::$commandLine) {
@@ -86,8 +91,9 @@ class Wdir
         else {
             self::$basePath = getcwd();
             if (isset($_GET['fnode'])) {
-                self::$request = $_GET['fnode'];
-                self::$fnode = self::$basePath . $_GET['fnode'];
+                $fnode = filter_input(INPUT_GET, 'fnode');
+                self::$request = $fnode;
+                self::$fnode = self::$basePath . $fnode;
             }
             else
                 self::$fnode = getcwd();
@@ -341,8 +347,6 @@ class Wdir
 
             }
 
-            // no longer needed
-            //asort($fnode->files);
 
             if ($fnode->url == '/') {
                 $fnode->latest = self::latest($fnode->files);
@@ -431,8 +435,8 @@ class Wdir
             }
         }
         elseif (self::opt('theme') == 'light') {
-            // https://kristopolous.github.io/BOOTSTRA.386/getting-started.html
-            $title = str_replace("wdir.php?fnode=", "", $fnode->url);
+            $scriptName = self::$scriptName;
+            $title = str_replace($scriptName . "?fnode=", "", $fnode->url);
             $latest =  (isset($fnode->latest) && $fnode->latest) ? "Latest: <a href='{$fnode->latest->url}' data-webpath='{$fnode->latest->webpath}'>{$fnode->latest->name}</a> <em>(added " . strtolower($fnode->latest->ago) . ")</em>" : '';
             $total = sizeof($fnode->files);
             $s = $total == 1 ? '' : 's';
@@ -587,7 +591,7 @@ class Wdir
                         window.dl = false;
 
                         var r = new XMLHttpRequest();
-                        r.open("GET", "/wdir.php?hit=" + webpath + '&cb=' + (+ (new Date)), true);
+                        r.open("GET", "/{$scriptName}?hit=" + webpath + '&cb=' + (+ (new Date)), true);
                         r.onload = function(){
                             window.location = href;
                             window.dl = true;
@@ -611,7 +615,7 @@ class Wdir
 						event.preventDefault();
 						if (clicked) {
 							var r = new XMLHttpRequest();
-                        	r.open("GET", "/wdir.php?del=" + del + '&cb=' + (+ (new Date)), true);
+                        	r.open("GET", "/$scriptName?del=" + del + '&cb=' + (+ (new Date)), true);
                         	r.onload = function(){
                             	if (r.status === 200) {
                                 	eval(r.responseText);
@@ -712,7 +716,7 @@ EOF;
         $fancyUrls = !$fancyUrlsForceDisabled ? self::opt('fancyUrls') : true;
 
         if ($path === $fullpath)
-            return "/";
+            return self::$scriptPath;
             //return (self::opt('fancyUrls') ? '' : "wdir.php?fnode=") . "/";
 
         // make sure our path has a trailing slash
@@ -722,9 +726,9 @@ EOF;
             $fullpath = (substr($fullpath, -1) != '/') ? $fullpath .= '/' : $fullpath;
 
         if (self::opt('directFile') && $fnode->isFile) {
-            return "/" . str_replace($path, '', $fullpath);
+            return self::$scriptPath . str_replace($path, '', $fullpath);
         }
-        return ($fancyUrls ? '' : "wdir.php?fnode=") . "/" . str_replace($path, '', $fullpath);
+        return ($fancyUrls ? '' : self::$scriptName . "?fnode=") . "/" . str_replace($path, '', $fullpath);
     }
 
     /**
