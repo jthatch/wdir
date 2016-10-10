@@ -267,6 +267,7 @@ class Wdir
             $fnode->name = basename(self::$fnode);
             $fnode->isFile = true;
             $fnode->isDir = !$fnode->isFile;
+			$fnode->isRoot = false;
 
             $fnode->path = dirname(self::$fnode);
             $fnode->size = filesize(self::$fnode);
@@ -285,6 +286,7 @@ class Wdir
 
             $fnode->isDir = true;
             $fnode->isFile = !$fnode->isDir;
+			$fnode->isRoot = false;
             $fnode->files = [];
             $fnode->real = self::$fnode;
             $fnode->path = dirname(self::$fnode);
@@ -316,8 +318,10 @@ class Wdir
                 }
                 else if (!$file->isDot() &&
                     $file->getFilename()[0] != '.') {
-                    if (self::opt('hideSelf') && $file->getFilename() == basename(__FILE__))
+                    if (self::opt('hideSelf') && $file->getFilename() == basename(__FILE__)) {
+						$fnode->isRoot = true;
                         continue;
+					}
                     if (in_array($file->getFilename(), (array) self::opt('hidden')))
                         continue;
                     $node = (object)[
@@ -347,11 +351,9 @@ class Wdir
 
             }
 
-
-            if ($fnode->url == '/') {
-                $fnode->latest = self::latest($fnode->files);
-            }
-
+			if ($fnode->isRoot) {
+            	$fnode->latest = self::latest($fnode->files);
+			}
         }
         else {
             self::log("Unable to open " . self::$fnode, "error");
@@ -436,7 +438,11 @@ class Wdir
         }
         elseif (self::opt('theme') == 'light') {
             $scriptName = self::$scriptName;
-            $title = str_replace($scriptName . "?fnode=", "", $fnode->url);
+			$homeUrl = self::$scriptPath . self::$scriptName;
+			$title = self::$scriptPath;
+			$titlePath = str_replace($scriptName . "?fnode=/", "", $fnode->url);
+			if ($titlePath && !$fnode->isRoot)
+				$title .= $titlePath;
             $latest =  (isset($fnode->latest) && $fnode->latest) ? "Latest: <a href='{$fnode->latest->url}' data-webpath='{$fnode->latest->webpath}'>{$fnode->latest->name}</a> <em>(added " . strtolower($fnode->latest->ago) . ")</em>" : '';
             $total = sizeof($fnode->files);
             $s = $total == 1 ? '' : 's';
@@ -654,7 +660,7 @@ class Wdir
             </div>
             <div class="r">
                 <div class="imgholder">
-                    <a href="/"><div class="logo">[wdir]</div></a>
+                    <a href="$homeUrl"><div class="logo">[wdir]</div></a>
                 </div>
                 <div class="stats">
                     <small>
@@ -715,8 +721,9 @@ EOF;
         $fullpath = $fnode->real;
         $fancyUrls = !$fancyUrlsForceDisabled ? self::opt('fancyUrls') : true;
 
-        if ($path === $fullpath)
-            return self::$scriptPath;
+        if ($path === $fullpath) {
+            return self::$scriptPath . self::$scriptName;
+		}
             //return (self::opt('fancyUrls') ? '' : "wdir.php?fnode=") . "/";
 
         // make sure our path has a trailing slash
