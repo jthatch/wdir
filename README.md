@@ -15,3 +15,10 @@ visit: http://yourwebsite.com/files/
 ```
 
 Note: if you would like to track how many hits files get, then make sure you sqlite3 installed and copy wdir.sqlite into the root of your web directory. This file with not be visible.
+
+## Coming soon
+- Admin support for files. Ability to add/remove.
+- Theming support
+- sqlite for tracking hits
+- Text logging
+- Support for transmission-cli (BitTorrent) daemon
