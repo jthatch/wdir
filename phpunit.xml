@@ -11,7 +11,7 @@
   syntaxCheck                 = "false"
 >
     <testsuites>
-        <testsuite name="Mobbill to Reporo Relay Test Suit">
+        <testsuite name="Wdir test suite">
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
