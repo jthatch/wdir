@@ -15,7 +15,7 @@ class CliController extends AbstractController implements ControllerInterface
       echo $this->getError()->getMessage() . "\n";
     }
     else {
-      printf("Index of %s\n", $this->getRequest());
+      printf("Index of %s\n", $this->getRequest()->getCwdAndPath());
       printf("%s %s %s\n",
         str_pad('NAME', 36, ' ', STR_PAD_RIGHT),
         str_pad('SIZE', 6, ' ', STR_PAD_RIGHT),

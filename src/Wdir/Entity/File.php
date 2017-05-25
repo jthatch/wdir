@@ -2,11 +2,13 @@
 
 namespace Wdir\Entity;
 
+use Wdir\Entity\Request;
+
 class File extends \SplFileInfo
 {
-  protected $request; // the request path
+  protected $request;
 
-  public function setRequest($request)
+  public function setRequest(Request $request)
   {
     $this->request = $request;
     return $this;

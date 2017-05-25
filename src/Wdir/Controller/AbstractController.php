@@ -4,10 +4,10 @@ namespace Wdir\Controller;
 
 use Wdir\Entity\FileBundle;
 use Wdir\Entity\File;
+use Wdir\Entity\Request;
 
 abstract class AbstractController implements ControllerInterface
 {
-	protected $cwd;
 	protected $request;
 	protected $bundle;
 	protected $error;
@@ -44,31 +44,25 @@ abstract class AbstractController implements ControllerInterface
 		return (bool) $this->error;
 	}
 
-	public function getCwd()
-	{
-		return $this->cwd;
-	}
-
-	public function setCwd($cwd)
+  public function setRequest(Request $request)
   {
-    $this->cwd = rtrim($cwd, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    return $this->request = $request;
     return $this;
   }
 
-	public function getRequest()
-	{
-		return $this->request;
-	}
+  public function getRequest()
+  {
+    return $this->request;
+  }
 
-	public function setRequest($request)
-	{
-		$this->request = $request;
-		return $this;
-	}
+  public function isRequest()
+  {
+    return (bool) $this->getRequest();
+  }
 
   public function isRequestAFile()
   {
-    $file = new File($this->getCwd() . $this->getRequest());
+    $file = new File($this->getRequest()->getCwdAndPath());
     return $file->isFile();
   }
 

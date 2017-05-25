@@ -1,31 +1,38 @@
 <?php
 
-
 namespace Wdir\Entity;
 
 use Wdir\Entity\File;
+use Wdir\Entity\Request;
 
 class FileBundle extends \FilesystemIterator
 {
-  protected $cwd; // this is the directory jail the script lives in. It cannot traverse above this.
-  protected $path;
+  protected $request;
   protected $files;
   protected $sortBy = 'getFilename';
-  protected $sortDirection;
+  protected $sortDirection = 'asc';
 
-  public function __construct($cwd, $path, $flags = \FilesystemIterator::CURRENT_AS_FILEINFO)
+  public function __construct(Request $request, $flags = \FilesystemIterator::CURRENT_AS_FILEINFO)
   {
-    $path = $this->sanitise($path);
-    //$path = $this->removeInitialSlash($path);
-    $this->setCwd($cwd);
-    $this->setPath($path);
-    parent::__construct($this->getCwdandPath(), $flags);
+    $this->setRequest($request);
+    parent::__construct($request->getCwdAndPath(), $flags);
+  }
+
+  public function setRequest(Request $request)
+  {
+    $this->request = $request;
+    return $this;
+  }
+
+  public function getRequest()
+  {
+    return $this->request;
   }
 
   public function current()
   {
     $file = new File(parent::current());
-    $file->setRequest($this->getPath());
+    $file->setRequest($this->getRequest());
     return $file;
   }
 
@@ -34,34 +41,6 @@ class FileBundle extends \FilesystemIterator
     if (!$value instanceof File) {
       throw new \InvalidArgumentException("value must be instance of File");
     }
-  }
-
-  public function setPath($path)
-  {
-    $this->path = rtrim($path, DIRECTORY_SEPARATOR);
-    $this->path = ltrim($path, DIRECTORY_SEPARATOR);
-    return $this;
-  }
-
-  public function getPath()
-  {
-    return $this->path;
-  }
-
-  public function setCwd($cwd)
-  {
-    $this->cwd = rtrim($cwd, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    return $this;
-  }
-
-  public function getCwd()
-  {
-    return $this->cwd;
-  }
-
-  public function getCwdAndPath()
-  {
-    return $this->getCwd() . $this->getPath();
   }
 
   public function setSortBy($sortBy)
@@ -96,7 +75,7 @@ class FileBundle extends \FilesystemIterator
   {
     $files = [];
     foreach($this as $file) {
-      if (APP_PHP === $file->getFilename())
+      if (defined(APP_PHP) && APP_PHP === $file->getFilename())
         continue;
       $files[] = $file;
     }
@@ -119,37 +98,27 @@ class FileBundle extends \FilesystemIterator
     return $files;
   }
 
-  protected function removeInitialSlash($path)
-  {
-    if (DIRECTORY_SEPARATOR === substr($path, 0, 1) && strlen($path) > 1)
-      return substr($path, 1);
-    else if (DIRECTORY_SEPARATOR === substr($path, 0, 1))
-      return '';
-    return $path;
-  }
-
-  protected function sanitise($path)
-  {
-    $path = urldecode($path);
-    return str_replace('..', '', $path);
-  }
-
   protected function areWeAtCwd()
   {
     return
-      realpath($this->getCwd()) ===
-      realpath($this->getCwd() . DIRECTORY_SEPARATOR . $this->getPath())
+      realpath($this->getRequest()->getCwd()) ===
+      realpath($this->getRequest()->getCwdAndPath())
     ;
   }
 
   protected function getParentDirectory()
   {
-    $file = new File($this->getCwdAndPath() . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
-    if (realpath($this->getCwd()) == $file->getPathInfo()->getPath()) {
-      $file->setRequest('');
+    $file = new File($this->getRequest()->getCwdAndPath() . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+    if (realpath($this->getRequest()->getCwd()) == $file->getPathInfo()->getPath()) {
+      $file->setRequest(new Request($this->getRequest()->getCwd(), ''));
     }
     else {
-      $file->setRequest(str_replace($this->getCwd(), '/', $file->getPathInfo()->getPath()));
+      $file->setRequest(
+        new Request(
+          $this->getRequest()->getCwd(), 
+          str_replace($this->getRequest()->getCwd(), '', $file->getPathInfo()->getPath())
+        )
+      );
     }
     return $file;
   }

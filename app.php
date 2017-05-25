@@ -13,9 +13,8 @@
  * @package    Wdir
  * @author     James Thatcher <james@jameswt.com>
  */
-namespace Wdir;
 
-use Wdir\Entity\FileBundle;
+namespace Wdir;
 
 require 'bootstrap.php';
 
@@ -23,31 +22,32 @@ $env = (object) parse_ini_file(__DIR__ . '/config/wdir.ini', true);
 define('DEVELOPMENT', !empty($env->development) ? true : false);
 define('ROOT', __DIR__);
 define('APP_PHP', basename(__FILE__));
+define('CLI', 'cli' === php_sapi_name());
 
-if ('cli' === php_sapi_name()) {
-  $controller = new \Wdir\Controller\CliController();
-  $request = isset($argv[1]) ? $argv[1] : "src/Wdir/Entity";
-} 
-else {
-  $controller = new \Wdir\Controller\WebController();
-  $controller->setView(!empty($env->view) ? $env->view : 'apache');
-  $request = filter_input(INPUT_SERVER, 'QUERY_STRING');
-}
-
+// The top-most level directory. Users will not be able to traverse above this.
 $cwd = getcwd();
 
-$controller->setCwd($cwd);
+$request = new \Wdir\Entity\Request;
+$request->setCwd($cwd);
+
+if (CLI) {
+  $controller = new \Wdir\Controller\CliController;
+  $request->setPath(isset($argv[1]) ? $argv[1] : "");
+} 
+else {
+  $controller = new \Wdir\Controller\WebController;
+  $request->setPath(filter_input(INPUT_GET, 'r'));
+  $controller->setView(!empty($env->view) ? $env->view : 'apache');
+}
+
 $controller->setRequest($request);
 
-// We get the request back santitised
-$request = $controller->getRequest();
-
-if ($controller->isRequestAFile()) {
+if ($controller->isRequestAFile() && !CLI) {
   $controller->redirectToFile();
 }
 else {
   try {
-    $bundle = new \Wdir\Entity\FileBundle($cwd, $request);
+    $bundle = new \Wdir\Entity\FileBundle($request);
     $controller->setBundle($bundle);
   }
   catch (\UnexpectedValueException $e) {

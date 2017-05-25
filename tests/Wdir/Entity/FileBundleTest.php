@@ -3,49 +3,43 @@
 namespace Tests\Wdir\Entity;
 
 use Wdir\Entity\FileBundle;
+use Wdir\Entity\Request;
 
 class FileBundleTest extends \PHPUnit_Framework_TestCase
 {
 
   public function testFileBundleConstructor()
   {
-    $this->assertInstanceOf(FileBundle::class, new FileBundle(getcwd(), DIRECTORY_SEPARATOR));
+    $request = new Request(getcwd());
+    $this->assertInstanceOf(FileBundle::class, new FileBundle($request));
   }
 
   public function testFileBundleConstructorFailure()
   {
     $this->setExpectedException(\UnexpectedValueException::class);
-    new FileBundle(getcwd().'FAKE_DIR_HERE', DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd(), 'FAKE_DIR_HERE');
+    new FileBundle($request);
   }
 
   public function testFileBundleOffsetSetFailure()
   {
     $this->setExpectedException(\InvalidArgumentException::class);
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
     $bundle->offsetSet(1, new \stdClass);
   }
 
-  public function testFileBundlePath()
+  public function testFileBundleReturnsRequest()
   {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
-    $this->assertEquals($bundle->getPath(), '');
-  }
-
-  public function testFileBundleCwd()
-  {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
-    $this->assertEquals($bundle->getCwd(), getcwd() . DIRECTORY_SEPARATOR);
-  }
-
-  public function testFileBundleCwdAndPath()
-  {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
-    $this->assertEquals($bundle->getCwdAndPath(), getcwd() . DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
+    $this->assertInstanceOf(Request::class, $bundle->getRequest());
   }
 
   public function testFileBundleSortBy()
   {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
     $bundle->setSortBy('getFilename');
     $this->assertEquals($bundle->getSortBy(), 'getFilename');
   }
@@ -53,20 +47,24 @@ class FileBundleTest extends \PHPUnit_Framework_TestCase
   public function testFileBundleSortByFailure()
   {
     $this->setExpectedException(\InvalidArgumentException::class);
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
     $bundle->setSortBy('thisShouldFail');
   }
 
   public function testFileBundleSortDirection()
   {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
     $bundle->setSortDirection('desc');
     $this->assertEquals($bundle->getSortDirection(), 'desc');
   }
 
   public function testFileBundleGetFiles()
   {
-    $bundle = new FileBundle(getcwd(), DIRECTORY_SEPARATOR);
+    $request = new Request(getcwd());
+    $bundle = new FileBundle($request);
     $this->assertInternalType("array", $bundle->getFiles());
   }
+
 }

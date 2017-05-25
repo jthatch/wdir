@@ -2,6 +2,7 @@
 
 namespace Wdir\Controller;
 
+use Wdir\Entity\Request;
 use Wdir\Entity\FileBundle;
 use Wdir\Entity\File;
 
@@ -79,7 +80,33 @@ class WebController extends AbstractController implements ControllerInterface
     return $this->sortDirection;
   }
 
-  public function setRequest($queryString)
+  public function setSortParams()
+  {
+    parse_str(filter_input(INPUT_SERVER, 'QUERY_STRING'), $get);
+
+    // sort
+    $sortBy = 'getFilename';
+    if (isset($get['C'])) {
+      switch($get['C']) {
+        case 'M': // modified
+          $sortBy = 'getMTime';
+          break;
+        case 'S': // size
+          $sortBy = 'getSize';
+          break;
+        case 'N': // filename
+        default:
+          $sortBy = 'getFilename';
+          break;
+      }
+    }
+    $this->setSortBy($sortBy);
+    $this->setSortDirection(isset($get) && isset($get['O']) && $get['O'] !== 'A' ? 'desc' : 'asc');
+
+		return $this;
+  }
+
+  /*public function setRequest($queryString)
 	{
     parse_str($queryString, $get);
 
@@ -107,10 +134,11 @@ class WebController extends AbstractController implements ControllerInterface
     $this->setSortDirection(isset($get) && isset($get['O']) && $get['O'] !== 'A' ? 'desc' : 'asc');
 
 		return $this;
-	}
+	}*/
 
 	public function render()
 	{
+    $this->setSortParams();
     if ($this->isBundle()) {
       $this->getBundle()->setSortBy($this->getSortBy());
       $this->getBundle()->setSortDirection($this->getSortDirection());
